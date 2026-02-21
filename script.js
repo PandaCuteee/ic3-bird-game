@@ -1287,13 +1287,9 @@ function loop() {
 }
 
 
-const handleInput = () => {
-    if (state.mode === 'play') state.bird.velocity = state.bird.jump; 
-    if (state.mode === 'wait') { state.mode = 'play'; document.getElementById('resumeHint').classList.add('hidden'); state.bird.velocity = state.bird.jump; }
-};
 function handleInput() {
 
-    // ===== ĐANG CHỜ BẮT ĐẦU =====
+    // ===== CHỜ BẮT ĐẦU =====
     if (state.mode === 'wait') {
         state.mode = 'play';
         document.getElementById('resumeHint').classList.add('hidden');
@@ -1309,22 +1305,15 @@ function handleInput() {
 
     // ===== HỒI SINH =====
     if (state.mode === 'revive') {
-        revivePlayer(); // đảm bảo bạn có hàm này
+        revivePlayer();
         return;
     }
 }
-
-// PC
-window.addEventListener('keydown', (e) => {
-    if (e.code === 'Space' || e.code === 'ArrowUp') handleInput();
-});
-
+window.addEventListener('keydown', (e) => { if (e.code === 'Space' || e.code === 'ArrowUp') handleInput(); });
 window.addEventListener('mousedown', handleInput);
-
 // MOBILE
 window.addEventListener('touchstart', function(e) {
-    e.preventDefault(); // tránh zoom / double tap
+    e.preventDefault();
     handleInput();
 }, { passive: false });
-window.addEventListener('mousedown', handleInput);
 init();
