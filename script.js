@@ -2,6 +2,19 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
 const allQuestions = [
+    
+    { type: 'multi_img', 
+        isImage: true,
+        q: "Đâu là ba thiết bị nhập khi được kết nối với máy tính không có màn hình cảm ứng? (Chọn 3)", 
+        a: [IMAGES.cpu_1, 
+            IMAGES.printer, 
+            IMAGES.screen, 
+            IMAGES.mouse,
+            IMAGES.headset,
+            IMAGES.keyboard], 
+            correct: [3, 4, 5] 
+    },
+    
     { 
         type: 'matching', 
         q: "Quan sát hình ảnh sau để xác định các loại cổng kết nối. Ghép với tên loại cổng kết nối tương ứng: ", 
@@ -370,12 +383,17 @@ function triggerQuestion() {
     updateHUD();
     state.mode = 'puzzle';
     const modal = document.getElementById('questionModal');
+    modal.className = "fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 p-4";
+    const qText = document.getElementById('qText');
+    qText.className = "text-xl font-bold text-yellow-500 mb-4 text-center leading-tight";
     modal.classList.remove('hidden');
     document.getElementById('qStepHeader').innerText = `TIẾN TRÌNH: ${state.qIndex + 1} / ${allQuestions.length}`;
     const q = allQuestions[state.qIndex];
     document.getElementById('qText').innerText = q.q;
     document.getElementById('feedback').innerText = "";
     const area = document.getElementById('optionsArea'); area.innerHTML = '';
+    area.className = "w-full overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar"; 
+    area.innerHTML = '';
     const submitBtn = document.getElementById('submitBtn');
     
     // Luôn khóa nút Nộp bài khi bắt đầu câu hỏi mới
@@ -504,10 +522,133 @@ function triggerQuestion() {
         area.appendChild(container);
     } else if (q.type === 'matching') {
         renderMatching(q, area, submitBtn);
+    } else if (q.type === 'multi_img') {
+        // Thiết lập Grid 2 cột chuyên cho hình ảnh
+        area.className = "grid grid-cols-2 gap-4 w-full";
+        
+        // Reset mảng lựa chọn tạm thời cho câu hỏi mới
+        state.tempMultiSelections = []; 
+
+        q.a.forEach((ans, i) => {
+            const div = document.createElement('div');
+            // Style đồng bộ với match-item (khung viền, bo góc, hiệu ứng hover)
+            div.className = "match-item flex items-center justify-center min-h-[120px] p-2 relative border-2 border-white/10 rounded-xl cursor-pointer transition-all bg-white/5 hover:bg-white/10";
+            
+            // Lấy ảnh Base64 từ mảng q.a và hiển thị
+            div.innerHTML = `
+                <div class="flex items-center justify-center h-24 w-full p-1 pointer-events-none">
+                    <img src="${ans}" class="max-h-full max-w-full object-contain" />
+                </div>`;
+
+            div.onclick = () => {
+                const idxInArr = state.tempMultiSelections.indexOf(i);
+                
+                if (idxInArr > -1) {
+                    // Nếu đã chọn rồi thì bỏ chọn: xóa màu vàng, xóa dấu tick
+                    state.tempMultiSelections.splice(idxInArr, 1);
+                    div.classList.remove('border-yellow-500', 'bg-yellow-500/20');
+                    const tick = div.querySelector('.tick-icon');
+                    if(tick) tick.remove();
+                } else {
+                    // Nếu chưa chọn thì thêm vào mảng: đổi màu vàng, thêm dấu tick
+                    state.tempMultiSelections.push(i);
+                    div.classList.add('border-yellow-500', 'bg-yellow-500/20');
+                    div.insertAdjacentHTML('beforeend', `
+                        <div class="tick-icon absolute top-2 right-2 bg-yellow-500 text-black rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow-sm">
+                            <i class="fas fa-check"></i>
+                        </div>`);
+                }
+                
+                // Cập nhật trạng thái nút Nộp bài (Submit)
+                const hasChecked = state.tempMultiSelections.length > 0;
+                submitBtn.disabled = !hasChecked;
+                submitBtn.className = hasChecked 
+                    ? "w-full py-4 rounded-xl font-black bg-yellow-500 text-black shadow-lg" 
+                    : "w-full py-4 rounded-xl font-black bg-gray-600 text-white/50 transition-all";
+            };
+            area.appendChild(div);
+        });
+    }else if (q.type === 'multi_img') {
+        renderMulti(q, area, submitBtn);
     }else if (q.type === 'matrix') {
         renderMatrix(q, area, submitBtn); // Đổi từ questionArea thành area
     }
 }
+// 1. Hàm bổ trợ hiển thị nội dung (Nhận diện Base64)
+function getSimpleContent(content) {
+    // Luôn bao bọc trong một div có kích thước cố định để giữ khung hình
+    let innerContent = "";
+
+    if (content && typeof content === 'string' && content.startsWith('data:image')) {
+        // Cấu trúc cho Ảnh
+        innerContent = `<img src="${content}" class="max-h-full max-w-full object-contain" />`;
+    } else {
+        // Cấu trúc cho Văn bản
+        innerContent = `<span class="text-center leading-tight break-words px-2 text-sm font-medium text-white">${content}</span>`;
+    }
+
+    // Trả về một container đồng nhất
+    return `
+    <div class="flex items-center justify-center w-full h-24 pointer-events-none">
+        ${innerContent}
+    </div>`;
+}
+
+// 2. Hàm Render Multi-choice
+function renderMulti(q, area, submitBtn) {
+    area.innerHTML = '';
+    
+    // Grid: 2 cột nếu là ảnh, 1 cột nếu là chữ
+    const grid = document.createElement('div');
+    grid.className = q.isImage ? "grid grid-cols-2 gap-4 w-full" : "flex flex-col gap-2 w-full";
+
+    // Khởi tạo mảng lưu trữ lựa chọn nếu chưa có
+    if (!state.tempMultiSelections) state.tempMultiSelections = [];
+
+    q.a.forEach((opt, i) => {
+        const item = document.createElement('div');
+        const isSelected = state.tempMultiSelections.includes(i);
+        
+        // Sử dụng style match-item đồng bộ với hàm matching của bạn
+        item.className = `match-item ${isSelected ? 'pair-color-0' : 'bg-white/5 border-white/10'} 
+                         flex items-center justify-center min-h-[110px] p-2 relative
+                         border-2 rounded-xl cursor-pointer transition-all hover:bg-white/10`;
+
+        item.innerHTML = getSimpleContent(opt);
+
+        // Hiển thị icon tích nếu ô đó đang được chọn
+        if (isSelected) {
+            item.insertAdjacentHTML('beforeend', `
+                <div class="absolute top-2 right-2 bg-yellow-500 text-black rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow-sm">
+                    <i class="fas fa-check"></i>
+                </div>
+            `);
+        }
+
+        // Logic khi click vào ô để chọn nhiều đáp án
+        item.onclick = () => {
+            const index = state.tempMultiSelections.indexOf(i);
+            if (index > -1) {
+                state.tempMultiSelections.splice(index, 1); // Bỏ chọn
+            } else {
+                state.tempMultiSelections.push(i); // Chọn
+            }
+            renderMulti(q, area, submitBtn); // Vẽ lại giao diện
+        };
+
+        grid.appendChild(item);
+    });
+
+    area.appendChild(grid);
+
+    // Mở khóa nút Gửi (Submit)
+    const hasSelection = state.tempMultiSelections.length > 0;
+    submitBtn.disabled = !hasSelection;
+    submitBtn.className = hasSelection 
+        ? "w-full py-4 rounded-xl font-black bg-yellow-500 text-black shadow-lg" 
+        : "w-full py-4 rounded-xl font-black bg-gray-600 text-white/50 cursor-not-allowed";
+}
+
 
 function renderMatrix(q, area, submitBtn) {
     if (!area) return;
@@ -734,7 +875,13 @@ function checkFinalAnswer() {
         isCorrect = Object.entries(q.correct).every(([rowIdx, colIdx]) => {
             return state.matrixAnswers[rowIdx] === colIdx;
         });
-    }
+    } else if (q.type === 'multi_img') {
+        const selected = state.tempMultiSelections || [];
+        // Kiểm tra nếu mảng đã chọn khớp hoàn toàn với mảng correct
+        isCorrect = selected.length === q.correct.length && 
+                    selected.every(v => q.correct.includes(v)) &&
+                    q.correct.every(v => selected.includes(v));
+                }
 
 
 
