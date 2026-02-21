@@ -1310,10 +1310,21 @@ function handleInput() {
     }
 }
 window.addEventListener('keydown', (e) => { if (e.code === 'Space' || e.code === 'ArrowUp') handleInput(); });
-window.addEventListener('mousedown', handleInput);
-// MOBILE
+canvas.addEventListener('mousedown', handleInput);// MOBILE
+// MOBILE SUPPORT (KHÔNG CHẶN NÚT START)
 window.addEventListener('touchstart', function(e) {
-    e.preventDefault();
+
+    // Nếu đang bấm vào nút Start hoặc modal thì không xử lý bay
+    if (
+        e.target.closest('#startScreen') ||
+        e.target.closest('#questionModal') ||
+        e.target.closest('#minigameModal') ||
+        e.target.closest('#finalResultModal')
+    ) {
+        return;
+    }
+
     handleInput();
-}, { passive: false });
+
+}, { passive: true });
 init();
