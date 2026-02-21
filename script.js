@@ -175,7 +175,7 @@ const allQuestions = [
         q: "Với mỗi câu phát biểu về sự khác biệt giữa Internet và mạng nội bộ, hãy chọn Đúng hoặc Sai.", 
         rows: ["Internet thuộc quyền sở hữu riêng của các tổ hợp công ty liên doanh ", 
             "Kết nối nội bộ an toàn hơn so với kết nối Internet ", 
-            "Hỗ trợ mở rộng hệ thống mạng của nhà trường mà không cần thiết kế lại khi số lượng học sinh tăng lên"],
+            "Mạng nội bộ không giới hạn số lượng người dùng và bất kỳ ai cũng có thể truy cập được"],
         correct: [ false, true, true] 
     },
 
@@ -251,7 +251,7 @@ const allQuestions = [
                 "Thiết bị lưu trữ dữ liệu bên trong giúp lưu trữ và truy xuất dữ liệu bằng bộ nhớ flash", 
                 "Thiết bị lưu trữ dữ liệu cơ điện tử bên trong giúp lưu trữ và truy xuất dữ liệu bằng đĩa từ quay nhanh", 
                 "Thiết bị lưu trữ dữ liệu bên ngoài hoạt động dựa trên kết nối USB với máy tính"],
-        correct: {0:1, 1:0, 2:1, 2:3, 3:2}
+        correct: {0:1, 1:0, 2:3, 3:2}
     },
 
 
@@ -350,21 +350,53 @@ function init() {
     loop();
 }
 
-
 function startGame() {
-    state.mode = 'wait'; // chuyển sang chế độ chờ
+
+    // ===== RESET TOÀN BỘ GAME =====
+    state.qIndex = 0;
+    state.correct = 0;
+    state.wrong = 0;
+    state.score = 0;
+    state.deaths = 0;
+    state.pipes = [];
+    state.tempSelections = [];
+    state.matchPairs = {};
+    state.matrixAnswers = {};
+
+    // ===== XÁO TRỘN CÂU HỎI =====
+    shuffleArray(allQuestions);
+
+    // ===== CẬP NHẬT HUD =====
     const qTotalEl = document.getElementById('qTotal');
     if (qTotalEl) qTotalEl.innerText = allQuestions.length;
-    document.getElementById('startScreen').classList.add('hidden');
-    document.getElementById('gameHUD').classList.remove('hidden');
-    document.getElementById('resumeHint').classList.remove('hidden'); // hiện chữ nhấn SPACE
-    spawnPipesInitial();
+
     updateHUD();
 
-    // Reset vị trí chim
+    state.mode = 'wait';
+
+    document.getElementById('startScreen').classList.add('hidden');
+    document.getElementById('gameHUD').classList.remove('hidden');
+    document.getElementById('resumeHint').classList.remove('hidden');
+
+    spawnPipesInitial();
+
     state.bird.y = canvas.height / 2;
     state.bird.velocity = 0;
 }
+// function startGame() {
+//     state.mode = 'wait'; // chuyển sang chế độ chờ
+//     const qTotalEl = document.getElementById('qTotal');
+//     if (qTotalEl) qTotalEl.innerText = allQuestions.length;
+//     document.getElementById('startScreen').classList.add('hidden');
+//     document.getElementById('gameHUD').classList.remove('hidden');
+//     document.getElementById('resumeHint').classList.remove('hidden'); // hiện chữ nhấn SPACE
+//     spawnPipesInitial();
+//     updateHUD();
+
+//     // Reset vị trí chim
+//     state.bird.y = canvas.height / 2;
+//     state.bird.velocity = 0;
+// }
 function spawnPipesInitial() {
     state.pipes = [];
     for(let i = 0; i < 3; i++) {
@@ -574,6 +606,16 @@ function triggerQuestion() {
         renderMatrix(q, area, submitBtn); // Đổi từ questionArea thành area
     }
 }
+// hàm xáo trộn câu hỏi
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+
 // 1. Hàm bổ trợ hiển thị nội dung (Nhận diện Base64)
 function getSimpleContent(content) {
     // Luôn bao bọc trong một div có kích thước cố định để giữ khung hình
