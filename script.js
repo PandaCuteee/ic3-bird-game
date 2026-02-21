@@ -1250,14 +1250,18 @@ function loop() {
                 state.bird.x-15 < p.x+80 &&
                 (state.bird.y-15 < p.top || state.bird.y+15 > canvas.height-p.bottom)
             ) {
-                triggerQuestion();
+                state.deaths++;
+    updateHUD();
+    respawnBird(true);
             }
         });
 
         state.pipes = state.pipes.filter(p => p.x > -150);
 
         if(state.bird.y > canvas.height || state.bird.y < 0) {
-            triggerQuestion();
+             state.deaths++;
+    updateHUD();
+    respawnBird(true);
         }
     }
 
